@@ -1,61 +1,73 @@
 // app/notes/page.tsx
-'use client'
+'use client'; // 必须在最顶部
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-export default function NotesPage() {
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    const [notes, setNotes] = useState<any[]>([])
-    const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        const fetchNotes = async () => {
-            try {
-                const { data, error } = await supabase.from('notes').select('*')
-                if (error) throw error
-                setNotes(data || [])
-            } catch (err: any) {
-                setError(err.message)
-            }
-        }
-        fetchNotes()
-    }, [supabase])
-
-    if (error) {
-        return <div style={{ color: 'red', padding: '2rem' }}>加载笔记出错: {error}</div>
-    }
+export default function Home() {
+    const notes = [
+        { id: 1, title: '学习 Next.js 基础', content: '...', date: '2026-02-06' },
+        { id: 2, title: 'TypeScript 类型系统', content: '...', date: '2026-02-06' },
+        { id: 3, title: '响应式设计技巧', content: '...', date: '2026-02-06' },
+    ];
 
     return (
-        <div style={{ padding: '2rem' }}>
-            <h1>我的笔记</h1>
-            {notes.length === 0 ? (
-                <p>暂无笔记，请先在 Supabase 中添加测试数据。</p>
-            ) : (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                    {notes.map((note) => (
-                        <li
-                            key={note.id}
-                            style={{
-                                margin: '1rem 0',
-                                padding: '1rem',
-                                border: '1px solid #eee',
-                                borderRadius: '4px'
-                            }}
-                        >
-                            <h2 style={{ margin: '0 0 0.5rem' }}>{note.title}</h2>
-                            <p style={{ margin: '0 0 0.5rem', color: '#333' }}>{note.content}</p>
-                            <small style={{ color: '#666' }}>
-                                {new Date(note.created_at).toLocaleString()}
-                            </small>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    )
+        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
+            <h1>NoteAI - 我的知识库</h1>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '2rem'
+            }}>
+                {notes.map((note) => (
+                    <div
+                        key={note.id}
+                        style={{
+                            padding: '1.5rem',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            backgroundColor: 'white',
+                            transition: 'all 0.3s ease',
+                            cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)';
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.transform = 'none';
+                        }}
+                    >
+                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>
+                            {note.title}
+                        </h3>
+                        <p style={{ margin: '0 0 1rem 0', color: '#64748b', lineHeight: 1.5 }}>
+                            {note.content}
+                        </p>
+                        <small style={{ color: '#94a3b8' }}>
+                            {note.date}
+                        </small>
+                    </div>
+                ))}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                <button
+                    style={{
+                        padding: '0.75rem 2rem',
+                        backgroundColor: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                    }}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
+                >
+                    + 创建新笔记
+                </button>
+            </div>
+        </main>
+    );
 }
