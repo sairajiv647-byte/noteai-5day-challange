@@ -1,60 +1,72 @@
-// app/page.tsx
-import NoteCard from './components/NoteCard';
+'use client';
 
-const mockNotes = [
-  {
-    id: 1,
-    title: '学习 Next.js 基础',
-    content: '今天学习了 Next.js 的 App Router 和页面渲染方式，收获很大。',
-    date: '2026-02-11',
-  },
-  {
-    id: 2,
-    title: 'Supabase 连接成功',
-    content: '终于把 Next.js 和 Supabase 连接起来了，现在可以从数据库读取笔记了！',
-    date: '2026-02-11',
-  },
-  {
-    id: 3,
-    title: '响应式设计思路',
-    content: '使用 CSS Grid 和媒体查询，让页面在手机和电脑上都有良好的显示效果。',
-    date: '2026-02-11',
-  },
-];
+import { useEffect, useState } from 'react';
+import { supabase } from './notes/lib/supabase';
+import NoteCard, { Note } from './components/NoteCard';
+import CreateButton from './components/CreateButton';
 
 export default function Home() {
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  // 从 Supabase 读取真实数据
+  const fetchNotes = async () => {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false }); // 按创建时间倒序排列
+
+    if (error) {
+      console.error('读取笔记时出错:', error);
+    } else {
+      setNotes(data || []);
+    }
+  };
+
+  // 页面加载时，从 Supabase 读取数据
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  // 删除笔记的处理函数
+  const handleDeleteNote = async (id: number | string) => {
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('删除笔记失败:', error);
+      alert('删除失败，请稍后重试');
+    } else {
+      // 从状态中移除已删除的笔记
+      setNotes(notes.filter((note) => note.id !== id));
+    }
+  }
+
   return (
-    <div
-      style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '2rem 1rem',
-      }}
-    >
-      <h1 style={{ fontSize: '2rem', marginBottom: '2rem', textAlign: 'center' }}>
+    <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
+      <h1 style={{ fontSize: '2rem', fontWeight: 700, textAlign: 'center', marginBottom: '2rem' }}>
         NoteAI - 我的知识库
       </h1>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <button className="create-button">
-          + 创建笔记
-        </button>
+        <CreateButton onNoteCreated={fetchNotes} />
       </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '1rem',
-        }}
-      >
-        {mockNotes.map((note) => (
-          <NoteCard
-            key={note.id}
-            title={note.title}
-            content={note.content}
-            date={note.date}
-          />
-        ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '1.5rem' }}>
+        {notes.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#6b7280', gridColumn: '1 / -1' }}>
+            还没有笔记，快去创建一个吧！
+          </p>
+        ) : (
+          notes.map((note) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              onNoteDeleted={handleDeleteNote}
+              onNoteUpdated={fetchNotes}
+            />
+          ))
+        )}
       </div>
-    </div>
+    </main>
   );
 }

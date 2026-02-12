@@ -1,72 +1,65 @@
-// app/notes/page.tsx
-'use client'; // 必须在最顶部
+'use client'; // 确保这行在最顶部
+
+import { useEffect, useState } from 'react';
+import { supabase } from './lib/supabase';
+import NoteCard, { Note } from '../components/NoteCard';
+import CreateButton from '../components/CreateButton';
 
 export default function Home() {
-    const notes = [
-        { id: 1, title: '学习 Next.js 基础', content: '...', date: '2026-02-06' },
-        { id: 2, title: 'TypeScript 类型系统', content: '...', date: '2026-02-06' },
-        { id: 3, title: '响应式设计技巧', content: '...', date: '2026-02-06' },
-    ];
+    const [notes, setNotes] = useState<Note[]>([]);
+
+    // 从 Supabase 读取真实数据
+    const fetchNotes = async () => {
+        const { data, error } = await supabase
+            .from('notes') // 确保表名和你在 Supabase 里的表名一致
+            .select('*');
+
+        if (error) {
+            console.error('读取笔记时出错:', error);
+        } else {
+            setNotes(data || []);
+        }
+    };
+
+    // 页面加载时，从 Supabase 读取数据
+    useEffect(() => {
+        fetchNotes();
+    }, []);
+
+    // 删除笔记的处理函数
+    const handleDeleteNote = async (id: number | string) => {
+        const { error } = await supabase
+            .from('notes')
+            .delete()
+            .eq('id', id)
+
+        if (error) {
+            console.error('删除笔记失败:', error)
+            alert('删除失败，请稍后重试')
+        } else {
+            // 从状态中移除已删除的笔记
+            setNotes(notes.filter((note) => note.id !== id))
+        }
+    }
 
     return (
         <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
-            <h1>NoteAI - 我的知识库</h1>
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '2rem'
-            }}>
-                {notes.map((note) => (
-                    <div
-                        key={note.id}
-                        style={{
-                            padding: '1.5rem',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '12px',
-                            backgroundColor: 'white',
-                            transition: 'all 0.3s ease',
-                            cursor: 'pointer',
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)';
-                            e.currentTarget.style.transform = 'translateY(-4px)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow = 'none';
-                            e.currentTarget.style.transform = 'none';
-                        }}
-                    >
-                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>
-                            {note.title}
-                        </h3>
-                        <p style={{ margin: '0 0 1rem 0', color: '#64748b', lineHeight: 1.5 }}>
-                            {note.content}
-                        </p>
-                        <small style={{ color: '#94a3b8' }}>
-                            {note.date}
-                        </small>
-                    </div>
-                ))}
+            <h1 style={{ fontSize: '2rem', fontWeight: 700, textAlign: 'center', marginBottom: '2rem' }}>
+                NoteAI - 我的知识库
+            </h1>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <CreateButton onNoteCreated={fetchNotes} />
             </div>
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                <button
-                    style={{
-                        padding: '0.75rem 2rem',
-                        backgroundColor: '#2563eb',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '1rem',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                    }}
-                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
-                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
-                >
-                    + 创建新笔记
-                </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                {/* 渲染从 Supabase 读取的笔记 */}
+                {notes.map((note) => (
+                    <NoteCard
+                        key={note.id}
+                        note={note}
+                        onNoteDeleted={handleDeleteNote}
+                        onNoteUpdated={fetchNotes}
+                    />
+                ))}
             </div>
         </main>
     );
